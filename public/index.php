@@ -9,7 +9,7 @@ use Slim\Middleware\MethodOverrideMiddleware;
 use function GetData\getData;
 use function GetData\putData;
 
-session_start();
+// session_start();
 $container = new Container();
 $container->set('renderer', function () {
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
