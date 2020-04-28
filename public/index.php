@@ -2,84 +2,151 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use App\Validator;
 use Slim\Factory\AppFactory;
 use DI\Container;
+use Slim\Middleware\MethodOverrideMiddleware;
+use function GetData\getData;
+use function GetData\putData;
 
+session_start();
 $container = new Container();
 $container->set('renderer', function () {
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
+$container->set('flash', function () {
+    return new \Slim\Flash\Messages();
+});
+
 AppFactory::setContainer($container);
+
 $app = AppFactory::create();
+$app->add(MethodOverrideMiddleware::class);
 $app->addErrorMiddleware(true, true, true);
 
-// $app->get('/users/{id}', function ($request, $response, array $args) {
-//     $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
-//     // var_dump($params);
-//     return $this->get('renderer')->render($response, 'users/show.phtml', $params);
-// });
+$router = $app->getRouteCollector()->getRouteParser();
 
+$app->get('/', function ($request, $response) {
+    return $this->get('renderer')->render($response, 'index.phtml');
+});
 
-// SEARCH FORM
-// $users = ['mike', 'mishel', 'adel', 'keks', 'kvas', 'kamila', 'boris'];
-// $app->get("/users", function ($request, $response) use ($users) {
-//     $term = $request->getQueryParam('term');
-//     // var_dump($term);
-//     $result = array_filter($users, function ($user) use ($term) {
-//         // var_dump($user);
-//         // var_dump(strpos($term, $user));
-//         return strpos($user, $term) !== false;
-//     });
-//     $params = [
-//         'users' => $users,
-//         'filtered' => $result
-//     ];
-//     var_dump($params);
-//     return $this->get('renderer')->render($response, "search/show.phtml", $params);
-// });
+$app->get("/users", function ($request, $response) {
+    $users = getData();
+    $flash = $this->get('flash')->getMessages();
+    $find = $request->getQueryParam('find');
+    if ($find) {
+        $result = array_filter($users, function ($user) use ($find) {
+            return strpos($user["name"], $find) !== false;
+        });
+    }
 
+    if (!$find) {
+        $result = $users;
+    }
 
-// Modicified form
+    $params = [
+        'users' => $result,
+        'flash' => $flash
+    ];
+    return $this->get('renderer')->render($response, "CRUD/users.phtml", $params);
+})->setName('users');
 
 $app->get('/users/new', function ($request, $response) {
     $params = [
-        'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => '']
+        'user' => ['id' => '', 'name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => '']
     ];
-    return $this->get('renderer')->render($response, 'modicified/index.phtml', $params);
-});
+    return $this->get('renderer')->render($response, 'CRUD/new.phtml', $params);
+})->setName('new');
 
-$app->post("/users", function ($request, $response) {
-    $user = json_encode($request->getParsedBodyParam('user'));
-    file_put_contents("datebase/users.json", $user . PHP_EOL, FILE_APPEND);
-    echo "all okey";
+$app->post("/users", function ($request, $response) use ($router) {
+    $user = $request->getParsedBodyParam('user');
+    $maxId =  collect(getData())->max('id');
+    $user['id'] = $maxId + 1;
+    $validate = new \App\Validator();
+    $errors = $validate->validate($user);
+    if (count($errors) === 0) {
+        putData($user);
+        $flash = $this->get('flash')->addMessage('success', 'User has been added');
+        $url = $router->urlFor('users');
+        return $response->withRedirect($url);
+    }
+
     $params = [
-        'user' => $user
+        'user' => $user,
+        'errors' => $errors
     ];
-    return $this->get('renderer')->render($response, 'modicified/index.phtml', $params);
+
+    return $this->get('renderer')->render($response, 'CRUD/new.phtml', $params);
 });
 
-
-$app->get("/users/search", function ($request, $response) {
-    $term = $request->getQueryParam('term');
-    $arrayFromDataBase = explode(PHP_EOL, file_get_contents("datebase/users.json"));
-    foreach ($arrayFromDataBase as $user) {
-        if (!empty($user)) {
-            $users[] = json_decode($user, true);
+$app->get("/users/{id}", function ($request, $response, $args) {
+    $id = $args['id'];
+    $users = getData();
+    foreach ($users as $user) {
+        if ($user['id'] == $id) {
+            $result[] = $user;
         }
     }
-    $filtered = array_filter($users, function ($user) use ($term) {
-        return strpos($user['name'], $term) !== false;
-    });
-    var_dump($filtered);
-    if (empty($filtered)) {
-        return $response->withStatus(404);
+    $params = [
+        'users' => $result
+    ];
+    return $this->get('renderer')->render($response, "CRUD/user.phtml", $params);
+})->setName('user');
+
+$app->get("/users/{id}/edit", function ($request, $response, $args) {
+    $id = $args['id'];
+    $users = getData();
+    $user = $users[$id];
+    
+    $params = [
+        'user' => $user,
+        'errors' => []
+    ];
+    return $this->get('renderer')->render($response, 'CRUD/edit.phtml', $params);
+});
+
+$app->patch("/users/{id}", function ($request, $response, $args) use ($router) {
+    $id = $args['id'];
+    $users = getData();
+    $user = $users[$id];
+    unset($users[$id]);
+    $changeTo = $request->getParsedBodyParam('user');
+    foreach ($user as $key => $value) {
+        if (array_key_exists($key, $changeTo)) {
+            $user[$key] = $changeTo[$key];
+        }
     }
 
+    $validator = new Validator();
+    $errors = $validator->validate($user);
+
+    if (count($errors) === 0) {
+        $users[$id] = $user;
+        file_put_contents("/home/evg/hexlet-slim-example/datebase/users.json", json_encode($users));
+        $flash = $this->get('flash')->addMessage('success', 'Data update');
+        $url = $router->urlFor('users');
+        return $response->withRedirect($url);
+    }
     $params = [
-        'users' => $users,
-        'filtered' => $filtered
-        ];
-    return $this->get('renderer')->render($response, "search/show.phtml", $params);
+        'test' => $user,
+        'errors' => $errors
+    ];
+
+    return $this->get('renderer')->render($response, "CRUD/edit.phtml", $params);
+});
+
+$app->delete("/users/{id}", function ($request, $response, $args) use ($router) {
+    $users = getData();
+    $id = $args['id'];
+    unset($users[$id]);
+    if (empty($users)) {
+        unlink("datebase/users.json");
+        return $response->withRedirect($router->urlFor('users'));
+    }
+    file_put_contents("/home/evg/hexlet-slim-example/datebase/users.json", json_encode($users));
+    $this->get('flash')->addMessage('success', "User was remove");
+    $url = $router->urlFor('users');
+    return $response->withRedirect($url);
 });
 
 $app->run();

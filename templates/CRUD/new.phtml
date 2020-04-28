@@ -4,23 +4,32 @@
             Name
             <input type="text" name="user[name]">
         </label>
+        <?= ($errors['name']) ?>
     </div>
     <div>
         <label>
             Email
             <input type="email" name="user[email]">
         </label>
+        <?= ($errors['email']) ?>
     </div>
     <div>
         <label>
             Password
             <input type="password" name="user[password]">
         </label>
-    </div>    <div>
-        <label>
-            Confirmation password
-            <input type="password" name="user[passwordConfirmation]">
-        </label>
+        <?= ($errors['password']) ?>
+        <div>
+            <label>
+                Confirmation password
+                <input type="password" name="user[passwordConfirmation]">
+            </label>
+            <p>
+            <?= ($errors['passwordConfirmation']) ?>
+            </p>
+            <?= ($errors['passwordDoNotMatch']) ?>
+        </div>
+        
     </div>
     <div>
         <label>

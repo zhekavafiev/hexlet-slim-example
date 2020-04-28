@@ -1,0 +1,19 @@
+<?php foreach ($users as $key => $user): ?>
+    <?php foreach ($user as $k => $v): ?>
+        <div>
+            <?= $k ?>: <?= $v ?>
+        </div>
+    <?php endforeach ?>
+<?php endforeach ?>
+<form action="/users/<?= $user['id'] ?>/edit" method="get">
+        <button>
+            Edit
+        </button>
+</form>
+<!-- <?php var_dump($user) ?> -->
+<form action="/users/<?= $user['id'] ?>" method="post">
+    <input type="hidden" name="_METHOD" value="DELETE">
+        <button>
+            Delete
+        </button>
+</form>

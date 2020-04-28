@@ -1,0 +1,19 @@
+<?php var_dump($user['id']) ?>
+<form action="/users/<?= $user['id'] ?>" method="post">
+    <input type='hidden' name="_METHOD" value='PATCH'>
+        <div>
+            <label>
+                Name
+                <input type='text' name='user[name]' value="<?= $user['name'] ?? ''?>">
+            </label>
+            <label>
+                Email
+                <input type='text' name='user[email]' value="<?= $user['email'] ?? ''?>">
+            </label>
+
+            <?php if(isset($errors['name'])): ?>
+                <div><?= $errors['name'] ?></div>
+            <?php endif; ?>
+        </div>
+        <input type="submit" value='Update'>
+</form>
