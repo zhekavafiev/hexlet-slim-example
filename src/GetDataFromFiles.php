@@ -34,3 +34,5 @@ function getNormalisedPath($fileName)
     $normalizedPath = implode(DIRECTORY_SEPARATOR, $arrayPath);
     return $normalizedPath;
 }
+
+// var_dump(__DIR__);

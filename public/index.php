@@ -8,6 +8,7 @@ use DI\Container;
 use Slim\Middleware\MethodOverrideMiddleware;
 use function GetData\getData;
 use function GetData\putData;
+use function GetData\getNormalisedPath;
 
 // session_start();
 $container = new Container();
@@ -127,7 +128,7 @@ $app->patch("/users/{id}", function ($request, $response, $args) use ($router) {
 
     if (count($errors) === 0) {
         $users[$id] = $user;
-        file_put_contents("/home/evg/hexlet-slim-example/datebase/users.json", json_encode($users));
+        file_put_contents(getNormalisedPath("users.json"), json_encode($users));
         $flash = $this->get('flash')->addMessage('success', 'Data update');
         $url = $router->urlFor('users');
         return $response->withRedirect($url);
@@ -145,10 +146,10 @@ $app->delete("/users/{id}", function ($request, $response, $args) use ($router) 
     $id = $args['id'];
     unset($users[$id]);
     if (empty($users)) {
-        unlink("datebase/users.json");
+        file_put_contents(getNormalisedPath("users.json"), '');
         return $response->withRedirect($router->urlFor('users'));
     }
-    file_put_contents("/home/evg/hexlet-slim-example/datebase/users.json", json_encode($users));
+    file_put_contents(getNormalisedPath("users.json"), json_encode($users));
     $this->get('flash')->addMessage('success', "User was remove");
     $url = $router->urlFor('users');
     return $response->withRedirect($url);
