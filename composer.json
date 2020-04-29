@@ -13,6 +13,7 @@
         "php-di/php-di": "^6.1",
         "slim/flash": "^0.4.0",
         "tightenco/collect": "^7.6",
-        "symfony/apache-pack": "^1.0"
+        "symfony/apache-pack": "^1.0",
+        "heroku/heroku-buildpack-php": "^173.0"
     }
 }
