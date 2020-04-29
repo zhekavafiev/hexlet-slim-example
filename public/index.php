@@ -26,8 +26,13 @@ $app->addErrorMiddleware(true, true, true);
 
 $router = $app->getRouteCollector()->getRouteParser();
 session_start();
+
 $app->get('/', function ($request, $response) {
     return $this->get('renderer')->render($response, 'index.phtml');
+});
+
+$app->get('/111', function ($request, $response) {
+    return $response->write('Hellow, World!');
 });
 
 $app->get("/users", function ($request, $response) {
